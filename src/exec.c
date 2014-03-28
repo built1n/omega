@@ -1,37 +1,34 @@
 #include <omega.h>
+#include <util.h>
 static void exec_0(z80_ctx* ctx)
 {
   asm("nop");
 }
-static void exec_1(z80_ctx* ctx)
+static void exec_1(z80_ctx* ctx) // ld bc, **
 {
-  ctx->c=readByte(ctx, readByte(ctx, ctx->pc+1));
-  ctx->b=readByte(ctx, readByte(ctx, ctx->pc+2));
+  setBC(ctx, getArg(ctx));
   ctx->pc+=2;
 }
-static void exec_2(z80_ctx* ctx)
+static void exec_2(z80_ctx* ctx) // ld (bc), a
 {
   writeByte(ctx, getBC(ctx), ctx->a);
 }
-static void exec_3(z80_ctx* ctx)
+static void exec_3(z80_ctx* ctx) // inc bc, flags not effected
 {
-  ++(ctx->c);
-  if(c==0) // overflow
-    {
-      ++(ctx->b);
-    }
+  setBC(ctx, getBC(ctx)+1);
 }
 static void exec_4(z80_ctx* ctx)
 {
-
+  
 }
 static void exec_5(z80_ctx* ctx)
 {
-
+  
 }
-static void exec_6(z80_ctx* ctx)
+static void exec_6(z80_ctx* ctx) // ld bc, *
 {
-
+  ctx->b=readByte(ctx, ctx->pc+1);
+  ++ctx->pc;
 }
 static void exec_7(z80_ctx* ctx)
 {
@@ -47,7 +44,7 @@ static void exec_9(z80_ctx* ctx)
 }
 static void exec_a(z80_ctx* ctx)
 {
-
+  ctx->a=readByte(ctx, getHL(ctx));
 }
 static void exec_b(z80_ctx* ctx)
 {
@@ -69,17 +66,30 @@ static void exec_f(z80_ctx* ctx)
 {
 
 }
-static void exec_10(z80_ctx* ctx)
+static void exec_10(z80_ctx* ctx) // djnz *
 {
-
+  --ctx->b;
+  if(ctx->b)
+    {
+      signed char jump=readByte(ctx, ctx->pc+1);
+      if(jump&0x80)
+	{
+	  jump=-jump;
+	}
+      else
+	{
+	  jump&=0x7F;
+	}
+      ctx->pc+=jump;
+    }
 }
-static void exec_11(z80_ctx* ctx)
+static void exec_11(z80_ctx* ctx) // ld de, **
 {
-
+  setDE(ctx, getArg(ctx));
 }
-static void exec_12(z80_ctx* ctx)
+static void exec_12(z80_ctx* ctx) // ld (de), a
 {
-
+  writeByte(ctx, getDE(ctx), ctx->a);
 }
 static void exec_13(z80_ctx* ctx)
 {
@@ -111,7 +121,7 @@ static void exec_19(z80_ctx* ctx)
 }
 static void exec_1a(z80_ctx* ctx)
 {
-
+  ctx->a=readByte(ctx, getBC(ctx));
 }
 static void exec_1b(z80_ctx* ctx)
 {
@@ -261,33 +271,33 @@ static void exec_3f(z80_ctx* ctx)
 {
 
 }
-static void exec_40(z80_ctx* ctx)
+static void exec_40(z80_ctx* ctx) // ld b, b
 {
 
 }
-static void exec_41(z80_ctx* ctx)
+static void exec_41(z80_ctx* ctx) // ld b, c
 {
-
+  ctx->b=ctx->c;
 }
-static void exec_42(z80_ctx* ctx)
+static void exec_42(z80_ctx* ctx) // ld b, d
 {
-
+  ctx->b=ctx->d;
 }
-static void exec_43(z80_ctx* ctx)
+static void exec_43(z80_ctx* ctx) // ld b, e
 {
-
+  ctx->b=ctx->e;
 }
-static void exec_44(z80_ctx* ctx)
+static void exec_44(z80_ctx* ctx) // ld b, h
 {
-
+  ctx->b=ctx->h;
 }
-static void exec_45(z80_ctx* ctx)
+static void exec_45(z80_ctx* ctx) // ld b, l
 {
-
+  ctx->b=ctx->l;
 }
 static void exec_46(z80_ctx* ctx)
 {
-
+  
 }
 static void exec_47(z80_ctx* ctx)
 {
@@ -415,23 +425,23 @@ static void exec_65(z80_ctx* ctx)
 }
 static void exec_66(z80_ctx* ctx)
 {
-
+  ctx->h=readByte(ctx, getHL(ctx));
 }
-static void exec_67(z80_ctx* ctx)
+static void exec_67(z80_ctx* ctx) // ld a, h
 {
-
+  ctx->a=ctx->h;
 }
-static void exec_68(z80_ctx* ctx)
+static void exec_68(z80_ctx* ctx) // ld l, b
 {
-
+  ctx->l=ctx->b;
 }
-static void exec_69(z80_ctx* ctx)
+static void exec_69(z80_ctx* ctx) // ld l, c
 {
-
+  ctx->l=ctx->c;
 }
-static void exec_6a(z80_ctx* ctx)
+static void exec_6a(z80_ctx* ctx) // ld l, d
 {
-
+  ctx->l=ctx->d;
 }
 static void exec_6b(z80_ctx* ctx)
 {
@@ -487,47 +497,62 @@ static void exec_77(z80_ctx* ctx)
 }
 static void exec_78(z80_ctx* ctx)
 {
-
+  ctx->a=ctx->b;
 }
 static void exec_79(z80_ctx* ctx)
 {
-
+  ctx->a=ctx->c;
 }
 static void exec_7a(z80_ctx* ctx)
 {
-
+  ctx->a=ctx->c;
 }
 static void exec_7b(z80_ctx* ctx)
 {
-
+  ctx->a=ctx->e;
 }
 static void exec_7c(z80_ctx* ctx)
 {
-
+  ctx->a=ctx->h;
 }
 static void exec_7d(z80_ctx* ctx)
 {
-
+  ctx->a=ctx->l;
 }
 static void exec_7e(z80_ctx* ctx)
 {
-
+  ctx->a=readByte(ctx, getHL(ctx));
 }
 static void exec_7f(z80_ctx* ctx)
 {
-
+  ctx->a=ctx->a;
 }
-static void exec_80(z80_ctx* ctx)
+static void exec_80(z80_ctx* ctx) // add a, b
 {
-
+  word result=(word)ctx->a+(word)ctx->b;
+  ctx->flags.zero=((result&0xFF)==0);
+  ctx->flags.sign=(result&0x80);
+  ctx->flags.carry=(result>0xFF);
+  ctx->flags.pv=calcParity(result&0xFF);
+  ctx->a=result;
 }
-static void exec_81(z80_ctx* ctx)
+static void exec_81(z80_ctx* ctx) // add a, c
 {
-
+  word result=(word)ctx->a+(word)ctx->c;
+  ctx->flags.zero=((result&0xFF)==0);
+  ctx->flags.sign=(result&0x80);
+  ctx->flags.carry=(result>0xFF);
+  ctx->flags.pv=calcParity(result&0xFF);
+  ctx->a=result;
 }
-static void exec_82(z80_ctx* ctx)
+static void exec_82(z80_ctx* ctx) // add a, d
 {
-
+  word result=(word)ctx->a+(word)ctx->d;
+  ctx->flags.zero=((result&0xFF)==0);
+  ctx->flags.sign=(result&0x80);
+  ctx->flags.carry=(result>0xFF);
+  ctx->flags.pv=calcParity(result&0xFF);
+  ctx->a=result;
 }
 static void exec_83(z80_ctx* ctx)
 {
@@ -1290,6 +1315,7 @@ void (*exec_table[256])(z80_ctx*)={
 &exec_fe,
 &exec_ff
 };
+ exec_table[opcode](ctx);
  ++ctx->pc;
 }
 
